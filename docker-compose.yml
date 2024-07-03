@@ -1,0 +1,52 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:14.6
+    restart: unless-stopped
+    container_name: postgresql_backend_ExclusiveAccess_430
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    ports:
+      - 8086:5432
+    volumes:
+#      - ./db:/var/lib/postgresql/data
+      - ./create-schema.sql:/docker-entrypoint-initdb.d/create-schema.sql
+  spring_security:
+    depends_on:
+      - db
+    build:
+      dockerfile: ./Dockerfile_Spring_Security
+    restart: on-failure
+    ports:
+      - 8087:8080
+    environment:
+      - spring.profiles.active=dev
+      - spring.datasource.driver-class-name=org.postgresql.Driver
+      - spring.datasource.url=jdbc:postgresql://db:5432/postgres
+      - spring.datasource.username=postgres
+      - spring.datasource.password=password
+      - spring.jpa.hibernate.ddl-auto=update
+      - spring.jpa.show-sql=true
+    volumes:
+      - .m2:/root/.m2
+    stdin_open: true
+    tty: true
+  app:
+    depends_on:
+      - db
+    build: .
+    restart: on-failure
+    ports:
+      - 8088:8080
+    environment:
+      - spring.profiles.active=dev
+      - spring.datasource.driver-class-name=org.postgresql.Driver
+      - spring.datasource.url=jdbc:postgresql://db:5432/postgres
+      - spring.datasource.username=postgres
+      - spring.datasource.password=password
+    volumes:
+      - .m2:/root/.m2
+    stdin_open: true
+    tty: true
